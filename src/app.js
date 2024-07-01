@@ -9,7 +9,7 @@ import portfolioroutes from './routes/portfolio.routes.js';
 const app = express();
 
 app.use(cors({
-  origin: 'https://stockmarket-frontend.vercel.app/',
+  origin: 'https://stockmarket-frontend.vercel.app',
   credentials: true, 
 }));
 
