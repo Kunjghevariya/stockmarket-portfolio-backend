@@ -8,7 +8,21 @@ const portfoliodata = asyncHandler(async (req, res) => {
     if (!Portfolio) {
         throw new ApiError(400, "Portfolio not found");
     }
-    res.status(200).json(new ApiResponse(Portfolio, "Portfolio data fetched successfully"));
+    let totalInvestment = 0;
+    Portfolio.holdings = Portfolio.holdings.map(holding => {
+        const stockInvestment = holding.quantity * holding.purchasePrice;
+        totalInvestment += stockInvestment;
+        return {
+            ...holding.toObject(),
+            stockInvestment
+        };
+    });
+    const response = {
+        ...Portfolio.toObject(),
+        totalInvestment : totalInvestment.toFixed(2)
+    };
+
+    res.status(200).json(new ApiResponse(response, "Portfolio data fetched successfully"));
 });
 
 const buy = asyncHandler(async (req, res) => {
