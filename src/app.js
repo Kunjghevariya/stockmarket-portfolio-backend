@@ -7,10 +7,21 @@ import watchlistRoute from './routes/watchlist.routes.js';
 import portfolioroutes from './routes/portfolio.routes.js';
 
 const app = express();
+const allowedOrigins = [
+  'https://stockmarket-frontend.vercel.app',
+  'https://stockmarket-frontend-dj9inwhjx-kunjghevariyas-projects.vercel.app/',
+  'http://localhost:5173'
+];
 
 app.use(cors({
-  origin: 'https://stockmarket-frontend.vercel.app',
-  credentials: true, 
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
 }));
 
 app.use(express.json({ limit: '16kb' }));
