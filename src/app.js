@@ -10,6 +10,7 @@ const app = express();
 const allowedOrigins = [
   'https://stockmarket-frontend.vercel.app',
   'https://stockmarket-frontend-dj9inwhjx-kunjghevariyas-projects.vercel.app/',
+  'https://vercel.com/kunjghevariyas-projects/stockmarket-frontend/AcSyohJ575PoVaS192dCKRAkEt9S',
   'http://localhost:5173'
 ];
 
