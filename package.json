@@ -1,7 +1,7 @@
 {
-  "name": "chai-backend",
+  "name": "stockMarket",
   "version": "1.0.0",
-  "description": "a backend at chai aur code channel - youtube",
+  "description": "Made by kunj Ghevariya",
   "type": "module",
   "main": "index.js",
   "scripts": {
@@ -10,9 +10,9 @@
   "keywords": [
     "javascript",
     "backend",
-    "chai"
+    "Kunj"
   ],
-  "author": "Hitesh Choudhary",
+  "author": "Kunj Ghevariya",
   "license": "ISC",
   "devDependencies": {
     "nodemon": "^3.1.3",
