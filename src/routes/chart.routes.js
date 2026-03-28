@@ -1,60 +1,29 @@
-import { Router } from "express";
-import axios from "axios";
+import { Router } from 'express';
+import cache from '../utils/cache.js';
+import { asyncHandler } from '../utils/asyncHandler.js';
+import { ApiResponse } from '../utils/ApiResponse.js';
+import { fetchChart } from '../services/external.js';
 
 const router = Router();
 
-router.get("/:symbol", async (req, res) => {
-  try {
-    const { symbol } = req.params;
-    const range = req.query.range || "1mo";
+router.get(
+  '/:symbol',
+  asyncHandler(async (req, res) => {
+    const symbol = req.params.symbol;
+    const range = req.query.range || '1mo';
+    const cacheKey = `chart:${String(symbol).toUpperCase()}:${range}`;
+    const cached = await cache.get(cacheKey);
 
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=${range}`;
-
-    const response = await axios.get(url);
-
-    console.log("📡 Yahoo Raw Chart API Response Received");
-
-    const result = response.data?.chart?.result?.[0];
-
-    if (!result) {
-      console.log("❌ No result found in Yahoo data");
-      return res.json([]);
+    if (cached) {
+      return res.json(JSON.parse(cached));
     }
 
-    console.log("✔ Yahoo chart 'result' found");
+    const points = await fetchChart(symbol, range);
+    const payload = new ApiResponse(200, { symbol: String(symbol).toUpperCase(), range, points }, 'Chart fetched successfully');
+    await cache.set(cacheKey, JSON.stringify(payload), { EX: Number(process.env.CHART_CACHE_TTL || 300) });
 
-    const timestamps = result.timestamp || [];
-
-    // Debug timestamps
-    console.log("⏱ timestamps length =", timestamps.length);
-
-    const quote = result.indicators?.quote?.[0] || {};
-
-    const {
-      open = [],
-      high = [],
-      low = [],
-      close = [],
-    } = quote;
-
-    // Debug OHLC arrays
-    console.log("📊 open length =", open.length);
-    console.log("📊 close length =", close.length);
-
-    // Build candles safely
-    const candles = timestamps.map((t, i) => ({
-      time: t,
-      open: open[i] ?? null,
-      high: high[i] ?? null,
-      low: low[i] ?? null,
-      close: close[i] ?? null,
-    }));
-
-    return res.json(candles);
-  } catch (err) {
-    console.error("❌ Chart API error:", err.message);
-    return res.status(500).json({ error: "Chart fetch error" });
-  }
-});
+    return res.status(200).json(payload);
+  })
+);
 
 export default router;

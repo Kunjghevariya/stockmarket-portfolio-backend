@@ -1,28 +1,46 @@
 import { Watchlist } from '../model/watchlist.model.js';
 import { ApiError } from '../utils/ApiError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
+import { ApiResponse } from '../utils/ApiResponse.js';
 
-export const watchlists = asyncHandler(async (req, res) => {
-  const list = await Watchlist.findOne({ user: req.user._id });
-  if (!list) return res.status(200).json({ stocks: [] });
-  res.json(list);
+const normalizeSymbol = (symbol) => String(symbol || '').trim().toUpperCase();
+
+export const getWatchlist = asyncHandler(async (req, res) => {
+  const list = await Watchlist.findOne({ user: req.user._id }).lean();
+  const stocks = Array.isArray(list?.stocks) ? list.stocks : [];
+  return res.status(200).json(new ApiResponse(200, { stocks }, 'Watchlist fetched successfully'));
 });
 
-export const addwatchlist = asyncHandler(async (req, res) => {
-  const { stockSymbol } = req.body;
+export const addToWatchlist = asyncHandler(async (req, res) => {
+  const stockSymbol = normalizeSymbol(req.body.stockSymbol);
   if (!stockSymbol) throw new ApiError(400, 'stockSymbol required');
-  let list = await Watchlist.findOne({ user: req.user._id });
-  if (!list) list = new Watchlist({ user: req.user._id, stocks: [stockSymbol] });
-  else if (!list.stocks.includes(stockSymbol)) list.stocks.push(stockSymbol);
-  await list.save();
-  res.json(list);
+
+  const list = await Watchlist.findOneAndUpdate(
+    { user: req.user._id },
+    { $addToSet: { stocks: stockSymbol } },
+    { new: true, upsert: true, setDefaultsOnInsert: true }
+  );
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, { stocks: list.stocks }, 'Watchlist updated successfully'));
 });
 
-export const removewatchlist = asyncHandler(async (req, res) => {
-  const { stockSymbol } = req.body;
-  const list = await Watchlist.findOne({ user: req.user._id });
-  if (!list) throw new ApiError(400, 'Watchlist not found');
-  list.stocks = list.stocks.filter(s => s !== stockSymbol);
-  await list.save();
-  res.json(list);
+export const removeFromWatchlist = asyncHandler(async (req, res) => {
+  const stockSymbol = normalizeSymbol(req.body.stockSymbol);
+  if (!stockSymbol) throw new ApiError(400, 'stockSymbol required');
+
+  const list = await Watchlist.findOneAndUpdate(
+    { user: req.user._id },
+    { $pull: { stocks: stockSymbol } },
+    { new: true }
+  );
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      { stocks: Array.isArray(list?.stocks) ? list.stocks : [] },
+      'Watchlist updated successfully'
+    )
+  );
 });
